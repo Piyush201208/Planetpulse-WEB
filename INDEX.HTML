@@ -1,0 +1,66 @@
+<script>
+function aqiClass(v) {
+    if (v <= 12) return "good";
+    if (v <= 35) return "moderate";
+    if (v <= 55) return "unhealthy";
+    if (v <= 150) return "very";
+    return "hazardous";
+}
+
+function healthImpact(v) {
+    if (v <= 12) return "Low risk";
+    if (v <= 35) return "Sensitive groups affected";
+    if (v <= 55) return "Asthma risk";
+    if (v <= 150) return "Heart & lung danger";
+    return "Severe health impact";
+}
+
+function searchCity() {
+    const city = document.getElementById("city").value;
+    document.getElementById("result").innerHTML =
+        "<tr><td colspan='4'>Loading data…</td></tr>";
+
+    fetch(https://api.openaq.org/v2/measurements?city=${city}&parameter=pm25&limit=1)
+    .then(res => res.json())
+    .then(data => {
+        if (!data.results || data.results.length === 0) {
+            document.getElementById("result").innerHTML =
+                "<tr><td colspan='4'>No live data available for this city</td></tr>";
+            return;
+        }
+
+        const d = data.results[0];
+        document.getElementById("result").innerHTML = `
+        <tr class="${aqiClass(d.value)}">
+            <td>${d.city}</td>
+            <td>${d.country}</td>
+            <td>${d.value} µg/m³</td>
+            <td>${healthImpact(d.value)}</td>
+        </tr>`;
+    })
+    .catch(() => {
+        document.getElementById("result").innerHTML =
+            "<tr><td colspan='4'>Data temporarily unavailable</td></tr>";
+    });
+}
+
+// Global AQI
+fetch("https://api.openaq.org/v2/measurements?parameter=pm25&limit=100")
+.then(res => res.json())
+.then(data => {
+    let sum = 0;
+    data.results.forEach(d => sum += d.value);
+    let avg = (sum / data.results.length).toFixed(1);
+
+    let box = document.getElementById("globalBox");
+    box.className = "box " + aqiClass(avg);
+    box.innerHTML = `
+        🌎 Average PM2.5: ${avg} µg/m³<br>
+        Estimated Health Impact: ${healthImpact(avg)}
+    `;
+})
+.catch(() => {
+    document.getElementById("globalBox").innerText =
+        "Global data temporarily unavailable";
+});
+</script>
